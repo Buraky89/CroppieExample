@@ -1,0 +1,204 @@
+<html>
+    <head>
+        <title>Croppie example</title>
+        <link href="style.css" rel="stylesheet" />
+        <script
+  src="https://code.jquery.com/jquery-3.5.0.min.js"
+  integrity="sha256-xNzN2a4ltkB44Mc/Jz3pT4iU1cmeR0FkXs4pru/JxaQ="
+  crossorigin="anonymous"></script>
+        <script src="croppie.js"></script>
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    </head>
+    <body>
+
+        <div class="upload-demo-wrap">
+            
+            
+            <div class="demo-wrap upload-demo">
+                <div class="container">
+                    <div class="grid">
+                        <div class="col-1-2 upload-col">
+                            <label for="avatar_1">Yükle</label>
+                            <div class="avatar-panel-mode-1 actions">
+                                <a class="btn file-btn">
+                                    <input type="file" id="upload" value="Resim Yükle" accept="image/*" />
+                                </a>
+                                <button class="upload-result">Güncelle</button>
+                            </div>
+                        </div>
+                        <div class="col-1-2 avatar-panel-mode-1">
+                            <div class="upload-msg">
+                                Kırpmaya başlamak için resim yükleyin
+                            </div>
+                            <div class="upload-demo-wrap">
+                                <div id="upload-demo"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>  
+
+        <script>
+            var $uploadCrop;
+        
+            function readFile(input) {
+                if (input.files && input.files[0]) {
+                    var reader = new FileReader();
+        
+                    reader.onload = function (e) {
+                        $('.upload-demo').addClass('ready');
+                        $uploadCrop.croppie('bind', {
+                            url: e.target.result
+                        }).then(function () {
+                            console.log('jQuery bind complete');
+                        });
+        
+                    }
+        
+                    reader.readAsDataURL(input.files[0]);
+                }
+                else {
+                    swal("Sorry - you're browser doesn't support the FileReader API");
+                }
+            }
+        
+            $uploadCrop = $('#upload-demo').croppie({
+                viewport: {
+                    width: 64,
+                    height: 64,
+                    type: 'square',
+                    showZoomer: true
+                },
+                enableExif: true
+            });
+        
+            $('#upload').on('change', function () {
+                if (this.files[0].name.indexOf(".gif") > -1) {
+                    alert("Uyarı: GIF yüklediğiniz için kırpılmayacaktır");
+        
+        
+        
+                    var url = "api_address_to_upload";
+                    var formData = new FormData();
+                    formData.append('picture', this.files[0]);
+        
+                    $.ajax({
+                        url: url,
+                        type: "POST",
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        data: formData
+                    })
+                        .done(function (e) {
+        
+                        }).fail(function (data) {
+                            alert("Yüklenemedi");
+                        }).success(function (data) {
+                            if (data.HasError) {
+                                self.location.reload();
+                            } else {
+                                alert("OK");
+                                self.location.reload();
+                            }
+                        });
+        
+        
+                } else {
+                    readFile(this);
+                }
+        
+            });
+            $('.upload-result').on('click', function (ev) {
+                $uploadCrop.croppie('result', {
+                    type: 'canvas',
+                    size: 'viewport'
+                }).then(function (resp) {
+                    popupResult({
+                        src: resp
+                    });
+                });
+            });
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+            function popupResult(result) {
+                var html;
+                if (result.html) {
+                    html = result.html;
+                }
+                if (result.src) {
+                    html = '<img src="' + result.src + '" />';
+        
+                    var url = "/api2/GlobalApi/UploadAvatar";
+                    var mimeType = result.src.match(/data:(image\/(.*));/i)[1];
+                    var base64ImageContent = result.src.replace(/^data:image\/(png|jpg);base64,/, "");
+                    var blob = base64ToBlob(base64ImageContent, mimeType);
+                    var formData = new FormData();
+                    formData.append('picture', blob);
+        
+                    $.ajax({
+                        url: url,
+                        type: "POST",
+                        cache: false,
+                        contentType: false,
+                        processData: false,
+                        data: formData})
+                            .done(function(e){
+        
+                        }).fail(function (data) {
+                            alert("Yüklenemedi");
+                        }).success(function (data) {
+                            if (data.HasError) {
+                                alert(data.Data);
+                            } else {
+                                alert("OK");
+                                self.location.reload();
+                            }
+                        });
+                }
+        
+            }
+        
+        
+            function base64ToBlob(base64, mime) {
+                mime = mime || '';
+                var sliceSize = 1024;
+                var byteChars = window.atob(base64);
+                var byteArrays = [];
+        
+                for (var offset = 0, len = byteChars.length; offset < len; offset += sliceSize) {
+                    var slice = byteChars.slice(offset, offset + sliceSize);
+        
+                    var byteNumbers = new Array(slice.length);
+                    for (var i = 0; i < slice.length; i++) {
+                        byteNumbers[i] = slice.charCodeAt(i);
+                    }
+        
+                    var byteArray = new Uint8Array(byteNumbers);
+        
+                    byteArrays.push(byteArray);
+                }
+        
+                return new Blob(byteArrays, { type: mime });
+            }
+        
+        
+        
+
+        
+        </script>
+
+
+    </body>
+</html>
